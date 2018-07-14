@@ -18,6 +18,27 @@ var qs = require('querystring');
 //쿼리스트링을 다루는 방법 2 : 직관적인 방법
 var url = require('url');
 
+function showParams(reqUrl){
+	//쿼리스트링을 다루는 직관적인 방법
+        var queryString = url.parse(reqUrl, true).query;
+        if (queryString.name) {
+            console.log('쿼리스트링을 다루는 직관적인 방법 : ' + queryString.name);
+        }
+
+        //배열임
+        console.log('keys : ' + Object.keys(queryString));
+        console.log('propNames : ' + Object.getOwnPropertyNames(queryString));
+        console.log('type of : ' + typeof Object.keys(queryString));
+
+        var keys = Object.keys(queryString);
+
+
+        console.log('---------쿼리스트링 파라미터 전부출력 ----------');
+        for (var i in keys) {
+            console.log(keys[i] + ':' + queryString[keys[i]]);
+        }
+}
+
 //웹 어플리케이션 서버, http서버를 연다. request 리스너를 매개변수로하여 app객체를 생성한다.
 var app = http.createServer(function(request, response) {
     //요청/응답객체
@@ -41,24 +62,8 @@ var app = http.createServer(function(request, response) {
             console.log(q.age);
             console.log(q.hoho);
         }
-        //쿼리스트링을 다루는 직관적인 방법
-        var queryString = url.parse(reqUrl, true).query;
-        if (queryString.name) {
-            console.log('쿼리스트링을 다루는 직관적인 방법 : ' + queryString.name);
-        }
-
-        //배열임
-        console.log('keys : ' + Object.keys(queryString));
-        console.log('propNames : ' + Object.getOwnPropertyNames(queryString));
-        console.log('type of : ' + typeof Object.keys(queryString));
-
-        var keys = Object.keys(queryString);
-
-
-        console.log('---------쿼리스트링 파라미터 전부출력 ----------');
-        for (var i in keys) {
-            console.log(keys[i] + ':' + queryString[keys[i]]);
-        }
+        
+        showParams(reqUrl);
 
         //아 이제알았다 ;; javascript에서 여러줄 string : ``
         //헐... javascript string에는 이미 템플릿기능이 있었네;; : ${[variable]}
