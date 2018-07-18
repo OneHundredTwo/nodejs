@@ -7,7 +7,7 @@
 	</head>
 	<body>
 		<h1>파일업로드</h1>
-		<form method="POST" enctype="multipart/form-data" action="/process/photo">
+		<form method="POST" enctype="multipart/form-data" action="/process/photo/1">
 			<div>
 				<canvas width="350" height="350">
 					
@@ -17,6 +17,7 @@
 			<div>
 				<input type="file" name="photo" multiple />
 			</div>
+			<div><input type="text" name="name" value="기원"/></div>
 			<div>
 				<button type="submit">업로드</button>
 			</div>

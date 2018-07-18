@@ -17,56 +17,6 @@ var fs = require('fs');
 
 //클라이언트에서 ajax로 요청했을때 CORS(다중 서버 접속) 지원
 var cors = require('cors');
-
-
-
-//익스프레스 객체 생성
-var app = express();
-
-//기본 속성 설정
-app.set('port', process.env.PORT || 3000);
-
-//custom middleware
-app.use((req, res, next) => {
-    console.log('haha custom middle ware : 난 첫번째 미들웨어! 요청된 url을 뿌리지! static도 소용없어!');
-    console.log('client request url : ' + req.url);
-
-    next();
-})
-
-
-//public 디렉토리를 static 리소스들의 루트경로로, upload 디렉토리를 업로드되는 리소스들의 루트경로로 접근가능하도록 오픈
-app.use('/public', static(path.join(__dirname, 'public')));
-app.use('/uploads', static(path.join(__dirname, 'uploads')));
-
-//custom middleware
-app.use((req, res, next) => {
-    console.log('haha custom middle ware : 난 static 리소스를 요청했을땐 수행되지 않는다!!!');
-
-    next();
-})
-
-//body-parser : post요청시 request body에 딸려오는 메세지를 request객체의 params객체에 자동으로 할당해주는 역할
-//body-parser를 사용해 application/x-www-form-urlencoded 요청메세지(POST/form) 파싱
-app.use(bodyParser.urlencoded({ extended: false }));
-//body-parser를 사용해 applicatio/json 메세지 파싱
-app.use(bodyParser.json());
-
-
-
-//cookie-parser 설정 , 아직도 미들웨어로 얘네를 왜 추가해야하는건지 모르겠다. 왜 미들웨어인지도 모르겠다.
-app.use(cookieParser());
-
-//세션 설정
-app.use(expressSession({
-    secret: 'my key',
-    resave: true,
-    saveUninitialized: true
-}));
-
-//클라이언트에서 ajax로 요청했을때 CORS(다중 서버 접속) 지원
-app.use(cors());
-
 //uuid 생성 함수
 function uuid() {
     function s4() {
@@ -111,6 +61,56 @@ var upload = multer({
     }
 });
 
+
+//익스프레스 객체 생성
+var app = express();
+
+//기본 속성 설정
+app.set('port', process.env.PORT || 3001);
+
+//custom middleware
+app.use((req, res, next) => {
+    console.log('haha custom middle ware : 난 첫번째 미들웨어! 요청된 url을 뿌리지! static도 소용없어!');
+    console.log('client request url : ' + req.url);
+
+    next();
+})
+
+
+//public 디렉토리를 static 리소스들의 루트경로로, upload 디렉토리를 업로드되는 리소스들의 루트경로로 접근가능하도록 오픈
+app.use('/public', static(path.join(__dirname, 'public')));
+app.use('/uploads', static(path.join(__dirname, 'uploads')));
+
+//custom middleware
+app.use((req, res, next) => {
+    console.log('haha custom middle ware : 난 static 리소스를 요청했을땐 수행되지 않는다!!!');
+
+    next();
+})
+
+//body-parser : post요청시 request body에 딸려오는 메세지를 request객체의 params객체에 자동으로 할당해주는 역할
+//body-parser를 사용해 application/x-www-form-urlencoded 요청메세지(POST/form) 파싱
+app.use(bodyParser.urlencoded({ extended: false }));
+//body-parser를 사용해 applicatio/json 메세지 파싱
+app.use(bodyParser.json());
+
+
+
+//cookie-parser 설정 , 아직도 미들웨어로 얘네를 왜 추가해야하는건지 모르겠다. 왜 미들웨어인지도 모르겠다.
+app.use(cookieParser());
+
+//세션 설정
+app.use(expressSession({
+    secret: 'my key',
+    resave: true,
+    saveUninitialized: true
+}));
+
+//클라이언트에서 ajax로 요청했을때 CORS(다중 서버 접속) 지원
+app.use(cors());
+
+
+
 // router : get/post/put/delete 등 서버자원을 조작하는 RESTful API 형식의 url을 함수에 매핑하는 특수한 미들웨어
 // 따라서 맨 마지막에 use로 추가한다.
 // router에서 route하는 함수 하나하나들은 그 url 패턴을 처리하는 미들웨어이다.
@@ -137,8 +137,11 @@ router.route('/').get((req, res, next) => {
 // array(filedname[, maxcount]) => maxcount 이상으로 파일이 업로드되는경우 에러가 발생할 수 있다.
 // fileds(fields) => 여러 필드의 file 입력이 있을경우 [{fieldname[, maxcount]}]식으로 지정한다. files에 저장된다.
 // 갯수제한이 없을경우 maxcount속성을 입력하지 않는다.
-router.route('/process/photo').post(upload.array('photo'), (req, res, next) => {
+router.route('/process/photo/:no').post(upload.array('photo'), (req, res, next) => {
     console.log('/process/photo 호출됨');
+    /* :token : spring web mvc의 PathVariable과 같음. params에 자동할당됨*/
+    var paramNo = req.params.no;
+    console.log('token no is : '+paramNo);
 
     try {
         var files = req.files; //post의 첫번째 인자인 multer.array가(파일이름목록) req의 files에 할당된다고함.
@@ -198,6 +201,6 @@ app.use((req, res) => {
 
 
 // Express 서버 시작
-http.createServer(app).listen(3000, function() {
-    console.log('Express 서버가 3000번 포트에서 시작됨.');
+http.createServer(app).listen(3001, function() {
+    console.log('Express 서버가 3001번 포트에서 시작됨.');
 });
