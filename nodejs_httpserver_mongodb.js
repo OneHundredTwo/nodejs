@@ -46,20 +46,33 @@ function connectDB(){
 		//제약조건 : unique&required : 기본키 제약조건, required : Not Null
 		//제약조건을 걸어놓은 스키마로 모델을 생성하면 => collection을 연결할때 무결성검사를 하기때문에 제약조건에 걸리면 에러뿜고 서버가 다운됨.
 		//뭐 이딴... 
+		//index도 이 스키마에서 지정해야한다... 이게 inmemory db인가...
+		//ex) 위치기반 서비스를 위해 저장되는 경위도 좌표에는 공간인덱싱을 사용해야하며 {type:Number, index:'2d', spare:true}같은 형태로 객체를 만들어 설정할 수 있습니다.
 		UserSchema = mongoose.Schema({
 			id:{type:String, required:true, unique:true},
 			name:String,
 			password:{type:String, required:true},
 			profile:{type:String, default:'default.png'},
-			created_at:Date,
-			updated_at:Date
+			created_at:{type:Date, index:{unique:false}, default:Date.now},
+			updated_at:{type:Date, index:{unique:false}, default:Date.now}
+		});
+		//static : 모델객체에서 사용할 수 있는 함수를 등록. 모델객체=UserModel ? 그럼 얘는 클래스지
+		UserSchema.static('findById', (id, callback) => {
+			return this.find({id:id}, callback);
+		});
+		UserSchema.static('findAll', (callback) => {
+			return this.find({}, callback);
+		});
+		//method : 모델 인스턴스 객체에서 사용할 수 있는 함수를 등록합니다. 뭔소리야. 모델 인스턴스 객체 = new UserModel ? 얘는 객체고
+		UserSchema.method('showMe', () => {
+
 		});
 		console.log('UserSchema 정의함');
 
 		//User Model 정의 
 		//Model = Connection처럼 쓴다.
 		//model을 정의합니다. name,[schema], [collection], [skipInit]. collection이 지정되지 않으면, name으로 유추한 컬렉션을 사용합니다.
-		UserModel = mongoose.model('users', UserSchema);
+		UserModel = mongoose.model('users2', UserSchema);
 		console.log('UserModel 정의함.');
 
 	});
@@ -149,22 +162,30 @@ router.route('/join').get(getHtmlResponseFunction('/view/joinForm.html'));
 var authUser = function(database, id, password, callback){
 	console.log('authUser 호출됨');
 
-	//아이디와 비밀번호를 사용해 검색
-	//toArray = ResultSet
-	UserModel.find({"id":id, "password":password}, (err,results) => {
-		if(err){callback(err, null); return;}
+	UserModel.findById(id, (err, results) => {
+		if(err) {
+			callback(err, null);
+			return;
+		}
 
-		console.log('아이디 [%s], 비밀번호가 [%s]가 일치하는 사용자 검색 결과', id, password);
+		console.log('아이디 [%s]로 사용자 검색 결과', id);
 		console.dir(results);
 
-		if(results.length > 0 ){
-			console.log('일치하는 사용자 찾음.');
-			callback(null, results);
+		if(results.length>0){
+			console.log('아이디와 일치하는 사용자 찾음.');
+
+			if(result[0]._doc.password == password){
+				console.log('비밀번호 일치함');
+				callback(null, results);
+			}else{
+				console.log('비밀번호 일치하지 않음');
+				callback(null, null);
+			}
 		}else{
-			console.log('일치하는 사용자 찾지 못함');
+			console.log('아이디와 일치하는 사용자 찾지 못함');
 			callback(null, null);
 		}
-	});
+	})
 }
 router.route('/session').post((req, res, next) => {
 	//param은 함수 : 인수이름을 넣으면 값이 반환됨. => get이든 post든
@@ -207,7 +228,7 @@ router.route('/session').post((req, res, next) => {
 var authId = function(database, id, callback){
 	console.log('authId 호출됨');
 
-	UserModel.find({"id":id}, (err,results) => {
+	UserModel.findById(id, (err,results) => {
 		if(err){callback(err, null); return;}
 
 		if(results.length > 0 ){
