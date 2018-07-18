@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<input type="text" class="hi bye"/>
+		<button>button</button>
+
+		<script src= "D:\Study\Node_MySQL_Spring_JSP_Eclipse\nodejs\public\js\jquery.js"></script>
+		<script>
+			var $btn = $('button');
+			var $inp = $('input');
+			$btn.on("click", function(){
+				console.log($inp.hasClass("hi"));
+				console.log($inp.hasClass("bye"));
+				$inp.removeClass("hi bye");
+				console.log($inp.hasClass("hi"));
+				console.log($inp.hasClass("bye"));
+			})
+
+		</script>
+	</body>
+</html>

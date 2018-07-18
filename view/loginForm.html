@@ -60,16 +60,22 @@
 			}
 
 			.login_form .btn{
+				display:inline-block;
+
 				width:65px;
-				height:25px;
+				line-height: 25px;
 
 				border:2px solid #424242;
 				border-radius: 3px;
+				padding:0;
+				margin-left:3px;
 
 				background-color: #323232;
 				cursor:pointer;
+				vertical-align: middle;
 
 				color:#F4F4F4;
+				font-size:16px;
 
 				transition: 0.2s ease;
 			}
@@ -80,6 +86,10 @@
 			.login_form .btn:active{
 				transform: translate(0px,0px);
 				box-shadow: 0 0;
+			}
+
+			a{
+				text-decoration: none;
 			}
 
 
@@ -96,7 +106,7 @@
 				<div class="row"><input type="text" id="id" name="id" placeholder="아이디를 입력해주세요" /></div>
 				<div class="row"><input type="password" id="password" name="password" placeholder="비밀번호를 입력해주세요" /></div>
 				<div class="row"><input type="checkbox" title="비밀번호 보기" id="cbShowPwdMode"/><label for="cbShowPwdMode">비밀번호 보기</label></div>
-				<div class="row"><button class="btn" type="submit">로그인</button></div>
+				<div class="row"><button class="btn" type="submit">로그인</button><a class="btn" href="/join">회원가입</a></div>
 			</fieldset>
 		</form>
 

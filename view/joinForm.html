@@ -15,7 +15,16 @@
 				width:300px;
 			}
 			.join_form input[type='text'], .join_form input[type='password']{
-				width:100%;
+				width:85%;
+			}
+			.join_form #id.cant{
+				color:red;
+			}
+			.join_form #id.ok{
+				color:blue;
+			}
+			.join_form .auth_btn{
+				width:10%;
 			}
 
 
@@ -30,8 +39,13 @@
 			<fieldset>
 				<legend class="screen_out">회원가입 폼</legend>
 				<div class="row"><label for="profile">프로필</label><input type="file" id="profile" name="profile"/></div>
-				<div class="row"><input type="text" id="id" name="id" placeholder="아이디를 입력해주세요" /></div>
-				<div class="row"><input type="password" id="password" name="password" placeholder="비밀번호를 입력해주세요" /></div>
+				<div class="row">
+					<input type="text" id="id" name="id" placeholder="아이디를 입력해주세요" required/>
+					<button type="button" class="auth_btn" id="authBtn">auth</button>
+				</div>
+				<div class="row">
+					<input type="password" id="password" name="password" placeholder="비밀번호를 입력해주세요" required/>
+				</div>
 				<div class="row"><input type="checkbox" title="비밀번호 보기" id="cbShowPwdMode"/><label for="cbShowPwdMode">비밀번호 보기</label></div>
 				<div class="row"><input type="text" id="name" name="name" placeholder="이름을 입력해주세요" /></div>
 				<div class="row"><button class="btn" type="submit">회원가입</button></div>
@@ -49,7 +63,50 @@
 				}else{
 					$password.attr('type', 'password');
 				}
+			});
+
+			var $authBtn=$("#authBtn");
+			var $id = $("#id");
+
+			$authBtn.on("click", function(){
+				$.ajax(
+					{
+						url:"/ajax/auth/"+$id.val(),
+						dataType:"json",
+						type:"GET",
+						error:function(xhr, status, error){
+							console.log(status);
+						},
+						success:function(result){
+							if(result.isDuplicated){
+								alert("중복됩니다. 다른 아이디를 입력해주세요");
+								$id.addClass("cant");
+								$id.removeClass("ok");
+							}else{
+								alert("사용가능한 아이디입니다.");
+								$id.removeClass("cant");
+								$id.addClass("ok");
+							}
+						}
+					}
+				)
+			});
+
+			$id.on('keydown', function(){
+				$id.removeClass("ok cant");
 			})
+
+			var $loginForm = $("#loginForm");
+			$loginForm.on('submit', function(){
+				console.log("submit");
+				if($id.hasClass("cant")){
+					alert("중복됩니다. 다른 아이디를 입력해주세요");
+					return false;
+				}else if(!$id.hasClass("ok")){
+					alert("아이디 중복검사를 해주세요.");
+					return false;;
+				}
+			});
 
 		</script>
 	</body>

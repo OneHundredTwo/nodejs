@@ -20,30 +20,54 @@ var MongoClient = require('mongodb').MongoClient;
 //데이터베이스 객체를 위한 변수 선언
 var database;
 
+//MongoDB = NoSQL : No Schema => 이것만으로 데이터를 모아서보거나 하긴 어려움
+//Mongoose : MongoDB Collection에 구조(스키마)를 찾아 관리할 수 있도록 하는 ObejctMapper모듈. 스키마를 만들고 모델을 만든다.
+//ObjectMapper : 자바스크립트 객체오 ㅏ데이터베이스 객체를 서로 매칭하여 바꿔주는 역할을 하는 녀석들의 총칭.
+var mongoose = require('mongoose');
 
+var UserSchema;
+var UserModel;
 
 //데이터베이스에 연결
 function connectDB(){
 	//데이터베이스 연결정보 : mongodb://[HOST]:[PORT]/[DB_NAME] : mongodb 시작할때 path이름이 db이름이 되는듯.
-	var databaseUrl = 'mongodb://localhost:27017';
+	var databaseUrl = 'mongodb://localhost:27017/local';
 
-	
+	//mongoose를 이용해 데이터베이스에 연결
+	mongoose.Promise = global.Promise;
+	mongoose.connect(databaseUrl);
+	database = mongoose.connection;
 
-	//데이터베이스 연결
-	MongoClient.connect(databaseUrl, (err, db) => {
-		if(err) throw err;
+	database.on('error', console.error.bind(console, 'mongoose connection error'));
+	database.on('open', () => {
+		console.log('데이터베이스에 연결되었습니다. : '+databaseUrl);
+		//스키마 정의
+		//String, Number, Boolean, Array, Buffer, Date, ObjectId, Mixed
+		//제약조건 : unique&required : 기본키 제약조건, required : Not Null
+		//제약조건을 걸어놓은 스키마로 모델을 생성하면 => collection을 연결할때 무결성검사를 하기때문에 제약조건에 걸리면 에러뿜고 서버가 다운됨.
+		//뭐 이딴... 
+		UserSchema = mongoose.Schema({
+			id:{type:String, required:true, unique:true},
+			name:String,
+			password:{type:String, required:true},
+			profile:{type:String, default:'default.png'},
+			created_at:Date,
+			updated_at:Date
+		});
+		console.log('UserSchema 정의함');
 
-		console.log('데이터베이스에 연결되었습니다 : '+databaseUrl);
+		//User Model 정의 
+		//Model = Connection처럼 쓴다.
+		//model을 정의합니다. name,[schema], [collection], [skipInit]. collection이 지정되지 않으면, name으로 유추한 컬렉션을 사용합니다.
+		UserModel = mongoose.model('users', UserSchema);
+		console.log('UserModel 정의함.');
 
-		//database 변수에 할당
-		//책에서 쓴 버전이 예전거라서 그런건지 중간내용이 빠져서그런건지
-		//최근 example에선 
-		//client.db(dbName).collection('createIndexExample1'); 
-		//이런식으로 쓰라고함.
-		database = db.db('local');
+	});
+	database.on('disconnected', () => {
+		console.log('연결이 끊어졌습니다. 5 초후 다시 연결합니다');
+		setInterval(connectDB, 5000);
+	});
 
-		//console.log(database);
-	})
 }
 
 //uuid 생성 함수
@@ -99,6 +123,7 @@ app.use(expressSession({
 app.use(cors());
 
 var htmlContentType = {'Content-Type':'text/html;charset=utf-8'};
+var jsonContentType = {'Content-Type':'application/json;charset=utf-8'};
 function getHtmlResponseFunction(url){
 	return function(req,res,next){
 		fs.readFile(path.join(__dirname,url),'utf-8',(err, data) => {
@@ -124,21 +149,20 @@ router.route('/join').get(getHtmlResponseFunction('/view/joinForm.html'));
 var authUser = function(database, id, password, callback){
 	console.log('authUser 호출됨');
 
-	//users 컬렉션 참조
-	
-	var users = database.collection('users');
-
 	//아이디와 비밀번호를 사용해 검색
 	//toArray = ResultSet
-	users.find({"id":id, "password":password}).toArray((err, docs) => {
-		if(err) {callback(err, null); return;};
+	UserModel.find({"id":id, "password":password}, (err,results) => {
+		if(err){callback(err, null); return;}
 
-		if(docs.length > 0){
-			console.log('아이디 [%s], 비밀번호가 [%s]가 일치하는 사용자 찾음.', id, password);
-			callback(null, docs);
+		console.log('아이디 [%s], 비밀번호가 [%s]가 일치하는 사용자 검색 결과', id, password);
+		console.dir(results);
+
+		if(results.length > 0 ){
+			console.log('일치하는 사용자 찾음.');
+			callback(null, results);
 		}else{
 			console.log('일치하는 사용자 찾지 못함');
-			callback(null, null);	
+			callback(null, null);
 		}
 	});
 }
@@ -150,11 +174,19 @@ router.route('/session').post((req, res, next) => {
 	var id = req.body.id;
 	var password = req.body.password;
 
-	authUser(database, id, password, (err, docs) => {
-		if(err) throw err;
-		if(docs){
-			console.dir(docs);
-			var user = docs[0];
+	authUser(database, id, password, (err, users) => {
+		if(err) {
+			console.log("hi im auth error");
+			console.log(err); return; res.end()
+			;};
+		if(users){
+			console.log("=======users=======");
+			console.dir(users);
+			var user = users[0];
+			console.log("=======user=======");
+			console.dir(user);
+			//users는 model 배열, user는 model, user._doc이 결과적으로 user정보
+			//근데 user.name이 왜 되는거지...
 			res.writeHead('200', htmlContentType);
 			res.write(headTmpl('환영합니다'));
 			res.write(`<h1>${user.name}님 환영합니다.</h1>
@@ -171,42 +203,82 @@ router.route('/session').post((req, res, next) => {
 	});
 });
 
+//join : id auth
+var authId = function(database, id, callback){
+	console.log('authId 호출됨');
+
+	UserModel.find({"id":id}, (err,results) => {
+		if(err){callback(err, null); return;}
+
+		if(results.length > 0 ){
+			callback(null, true);
+		}else{
+			callback(null, false);
+		}
+	});
+}
+router.route('/ajax/auth/:id').get((req, res, next) => {
+	var id = req.params.id;
+	console.log(id);
+	var returnValue = {
+		isDuplicated:false
+	};
+
+	authId(database, id, (err, isDuplicated) => {
+		returnValue.isDuplicated = isDuplicated;
+		console.log(returnValue);
+		//https://stackoverflow.com/questions/19696240/proper-way-to-return-json-using-node-or-express
+		//json 형태로 보내는법  1 : JSON.stringify() 
+		//방법 2 : express response객체의 send 메소드.
+		res.send(returnValue);
+		/*res.writeHead('200', jsonContentType);
+		res.write(JSON.stringify(returnValue));
+		res.end();*/
+		next();
+	});
+
+
+
+})
+
 //join
 var addUser = function(database, id, password, name, profile, callback){
 	console.log('addUser 호출됨 : '+ id +', '+ password +', '+name);
 
-	//users 컬렉션 참조
-	var users = database.collection('users');
+	//UserModel 인스턴스 생성
+	//Model = VO + Connection같네 
+	var user = new UserModel({"id":id, "password":password, "name":name, "profile":profile});
 
-	//id, password, username을 사용해 사용자 추가
-	users.insertMany([{"id":id, "password":password, "name":name, "profile":profile}], (err, result) => {
-		if(err) {
-			callback(err, null);
-			return;
-		}
+	//save()로 저장
+	user.save((err) => {
+		if(err){callback(err, null); return;}
 
-		//오류가 아닌경우, 콜백함수를 호출하면서 결과 객체 전달
-		if(result.insertedCount > 0){
-			console.log("사용자 레코드 추가됨 : " + result.insertedCount);
-		}else{
-			console.log("추가된 레코드 없음");
-		}
-
-		callback(null, result);
+		console.log("사용자 데이터 추가함.");
+		console.log(user);
+		callback(null, user);
 	})
 }
 //0717밤에 한참동안 multer로 업로드가 안되는 현상 : 코드 똑같은데 그냥 갑자기 됐다. nodejs도 좀 불안정한듯.
 //안되는 현상이 발생하면 그냥 완전히 껏다 키자.
 router.route('/user').post(upload.single('profile'),(req, res, next) => {
-	var id = req.body.id, password = req.body.password, name = req.body.name, profile = req.file.filename;
+	console.log("1");
+	var id = req.body.id, password = req.body.password, name = req.body.name;
+	var profile=null;
+	if(req.file){
+		profile= req.file.filename;
+	}
+	console.log("2");
 	addUser(database, id, password, name, profile, (err, result) => {
-		if(err) throw err;
+		if(err) {
+			console.log("hi im save error");
+			console.log(err); return; res.end();
+		};
 
 		res.writeHead('200', htmlContentType);
 		res.write(headTmpl('회원가입 결과'));
 		//content
-		if(result.ops.length>0){
-			var user = result.ops[0];
+		if(result){
+			var user = result;
 			res.write(`
 					<h2>회원가입 결과</h2>
 					<p>
