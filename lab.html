@@ -8,16 +8,12 @@
 
 		<script src= "D:\Study\Node_MySQL_Spring_JSP_Eclipse\nodejs\public\js\jquery.js"></script>
 		<script>
-			var $btn = $('button');
-			var $inp = $('input');
-			$btn.on("click", function(){
-				console.log($inp.hasClass("hi"));
-				console.log($inp.hasClass("bye"));
-				$inp.removeClass("hi bye");
-				console.log($inp.hasClass("hi"));
-				console.log($inp.hasClass("bye"));
-			})
-
+			var ws = new WebSocket("ws://192.168.65.20");
+			console.log(ws);
+			var fun = {
+				fun:function aaa(hi){console.log(hi)}
+			};
+			console.log(fun);
 		</script>
 	</body>
 </html>
